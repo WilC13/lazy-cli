@@ -20,6 +20,18 @@ Set `LAZY_OPENAI_API_KEY`, `LAZY_ANTHROPIC_API_KEY`, or `LAZY_XAI_API_KEY` in yo
 
 Cloud providers require explicit `lazy config consent-cloud --yes` before any sanitized local context is sent. Context sharing defaults to `sanitized`; use `lazy config set --context-sharing minimal` to omit CLI arguments and environment-variable names. Environment values are never included.
 
+## Safety and Execution
+
+`lazy ask "..."` previews a proposed command. To offer execution, add `--run`; `lazy-cli` shows L1 deterministic and L2 semantic risk decisions, then requires interactive confirmation. Commands marked critical are refused. Execution uses `shell=False`, rejects shell operators such as pipes and redirects, streams output, and times out after 60 seconds. Successful commands are archived locally at `~/.lazy_wiki.md` with common secret forms redacted.
+
+```sh
+lazy doctor
+lazy ask "show the short Git status"
+lazy ask "run the unit tests" --run
+```
+
+See [PRIVACY.md](PRIVACY.md) and [SECURITY.md](SECURITY.md) for the threat model and data-handling policy.
+
 ## Development
 
 ```sh

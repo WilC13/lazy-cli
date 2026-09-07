@@ -32,6 +32,7 @@ class CloudContextConsentRequired(GenerationError):
 class CommandGenerator(Protocol):
     async def generate(self, request: str, context: LocalContext) -> CommandProposal:
         """Generate a structured command proposal."""
+        ...
 
 
 class BaseGenerator:
@@ -50,8 +51,10 @@ class BaseGenerator:
                 "'lazy config consent-cloud --yes' first."
             )
         return (
-            "You translate natural-language requests into one safe shell command. "
-            "Return JSON matching the requested schema. Do not include secrets.",
+            (
+                "You translate natural-language requests into one safe shell command. "
+                "Return JSON matching the requested schema. Do not include secrets."
+            ),
             f"Request: {request}\n\nLocal context:\n{_context_json(context, self.config.context_sharing)}",
         )
 

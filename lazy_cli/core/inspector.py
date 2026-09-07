@@ -5,13 +5,17 @@ from __future__ import annotations
 import ast
 import os
 import re
+import subprocess
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 from pydantic import BaseModel, Field
 
 _SENSITIVE_NAME = re.compile(r"(?:api_?)?(?:key|secret|password|token)", re.IGNORECASE)
 _CONTEXT_FILES = ("package.json", "requirements.txt", "pyproject.toml", "Dockerfile")
+_MAX_GIT_STATUS_CHARS = 2_000
+_MAX_ENVIRONMENT_VARIABLES = 200
 
 
 class CLIArgument(BaseModel):
@@ -38,6 +42,7 @@ class LocalContext(BaseModel):
     working_directory: str
     files_present: list[str] = Field(default_factory=list)
     git_status: str | None = None
+    project_facts: dict[str, bool] = Field(default_factory=dict)
     cli_arguments: list[CLIArgument] = Field(default_factory=list)
     environment_variables: list[EnvironmentVariable] = Field(default_factory=list)
 
@@ -126,6 +131,8 @@ def scan_local_context(working_directory: Path) -> LocalContext:
     return LocalContext(
         working_directory=str(root),
         files_present=files_present,
+        git_status=_git_status(root),
+        project_facts={"docker_detected": any(name in files_present for name in ("Dockerfile", "docker-compose.yml", "compose.yml"))},
         cli_arguments=cli_arguments,
         environment_variables=environment_variables,
     )
@@ -139,10 +146,28 @@ def _environment_names(root: Path) -> list[EnvironmentVariable]:
             names.update(_read_env_names(env_path.read_text(encoding="utf-8")))
         except OSError:
             pass
-    return [
+    variables = [
         EnvironmentVariable(name=name, is_sensitive=bool(_SENSITIVE_NAME.search(name)))
         for name in sorted(names)
     ]
+    return variables[:_MAX_ENVIRONMENT_VARIABLES]
+
+
+def _git_status(root: Path) -> str | None:
+    try:
+        completed = subprocess.run(
+            ["git", "status", "--short"],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            timeout=2.0,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if completed.returncode != 0:
+        return None
+    return completed.stdout[:_MAX_GIT_STATUS_CHARS] or None
 
 
 def _read_env_names(content: str) -> Iterable[str]:

@@ -1,6 +1,6 @@
+import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 
 from lazy_cli.core.inspector import inspect_argparse, scan_local_context
 

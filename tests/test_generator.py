@@ -5,7 +5,11 @@ import unittest
 import httpx
 
 from lazy_cli.config import UserConfig
-from lazy_cli.core.generator import CloudContextConsentRequired, OllamaGenerator, OpenAICompatibleGenerator
+from lazy_cli.core.generator import (
+    CloudContextConsentRequired,
+    OllamaGenerator,
+    OpenAICompatibleGenerator,
+)
 from lazy_cli.core.inspector import EnvironmentVariable, LocalContext
 
 
